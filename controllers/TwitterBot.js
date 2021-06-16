@@ -58,7 +58,7 @@ module.exports = class TwitterBot {
     const event = {
       message_create: {
         target: {
-          recipient_id: "1299470533197787136"
+          recipient_id: this.#userId
         },
         message_data: {
           text: `Screenshot link: ${link}`

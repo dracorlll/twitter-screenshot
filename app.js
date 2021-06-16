@@ -30,7 +30,7 @@ const job = new CronJob('*/5 * * * * *', async () => {
   if (mentionList.length !== 0) {
     mentionList.pop()
     lastMention = mentionList[0].id
-    // await setLastMention(lastMention)
+    await setLastMention(lastMention)
     for (let mention of mentionList)
       new TwitterBot(browserInstance, twitterClient, mention.in_reply_to_status_id_str, mention.user.id_str).start()
   }
