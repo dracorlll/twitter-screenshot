@@ -7,8 +7,9 @@ const CronJob = require('cron').CronJob
 const options = require('./helpers/file')
 const {v4: uuidv4} = require('uuid')
 let lastMention
-
-const imgur = require('./controllers/imgurApi')
+const express = require('express')
+const app = express()
+const PORT = process.env.PORT || 3000;
 
 const twitterClient = new TwitterClient({
   apiKey: process.env.API_KEY,
@@ -47,6 +48,15 @@ const job = new CronJob('*/10 * * * * *', async () => {
 onStart().then(r => console.log("Program has started..."))
 
 
+
+
+app.get('/', (req, res) => {
+  res.send('Hello World!')
+})
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Heroku app listening at http://localhost:${PORT}`)
+})
 
 
 
