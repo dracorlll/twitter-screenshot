@@ -10,6 +10,9 @@
     "start": "node app.js",
     "demon": "nodemon app"
   },
+  "nodemonConfig": {
+    "ignore": ["user.json", "tests/"]
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dracorlll/twitter-screenshot.git"

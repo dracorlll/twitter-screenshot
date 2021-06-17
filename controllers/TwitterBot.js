@@ -31,27 +31,40 @@ module.exports = class TwitterBot {
  
   static async checkMentions(twitterClient, lastMention){
     const options = {since_id: lastMention, trim_user: true}
-    return await twitterClient.tweets.statusesMentionsTimeline(options)
+    let res
+    try {
+      res = await twitterClient.tweets.statusesMentionsTimeline(options)
+    }
+    catch (err) {
+      return err
+    }
+    return res
   }
 
   async #takeScreenshot() {
     const imagesHaveLoaded = async () => {
       return Array.from(document.querySelectorAll('iframe')[0].contentDocument.images).every((i) => i.complete)
     }
-    const browser = await this.#browserInstance
-    const html = '<div id="container"></div>'
     const imagePath = `tests/${this.#tweetId}${uuidv4()}.png`
-    const screenshotOptions = {path: imagePath, fullPage: true, omitBackground: true}
-    const tweetOptions = JSON.stringify({theme: 'dark', align: 'center'}).toString()
-    const page = await browser.newPage()
-    await page.setViewport(viewPort);
-    await page.setContent(html)
-    await page.addScriptTag({path: './public/javascripts/widgets.js'});
-    const evalString = `twttr.widgets.createTweet("${this.#tweetId}", document.getElementById("container"), ${tweetOptions})`
-    await page.evaluate(evalString)
-    await page.waitForFunction(imagesHaveLoaded)
-    await page.screenshot(screenshotOptions);
-    await page.close()
+
+    try{
+      const browser = await this.#browserInstance
+      const html = '<div id="container"></div>'
+      const screenshotOptions = {path: imagePath, fullPage: true, omitBackground: true}
+      const tweetOptions = JSON.stringify({theme: 'dark', align: 'center'}).toString()
+      const page = await browser.newPage()
+      await page.setViewport(viewPort);
+      await page.setContent(html)
+      await page.addScriptTag({path: './public/javascripts/widgets.js'});
+      const evalString = `twttr.widgets.createTweet("${this.#tweetId}", document.getElementById("container"), ${tweetOptions})`
+      await page.evaluate(evalString)
+      await page.waitForFunction(imagesHaveLoaded)
+      await page.screenshot(screenshotOptions);
+      await page.close()
+    }
+    catch (err) {
+      return err
+    }
     return imagePath
   }
   async #postDirectMessage(link) {
@@ -66,13 +79,25 @@ module.exports = class TwitterBot {
       },
       type: "message_create"
     }
-    await this.#twitterClient.directMessages.eventsNew({event})
-    return true
+    let res
+    try {
+      res = await this.#twitterClient.directMessages.eventsNew({event})
+
+
+    } catch (err) {
+      return err
+    }
+    return res
   }
 
   async #imageCrop(imagePath) {
-    let image = await Jimp.read(imagePath)
-    let crop = await image.autocrop().writeAsync(imagePath)
+    try {
+      let image = await Jimp.read(imagePath)
+      await image.autocrop().writeAsync(imagePath)
+
+    } catch (err) {
+      return err
+    }
     return true
   }
 }

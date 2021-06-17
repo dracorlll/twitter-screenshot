@@ -17,10 +17,18 @@ const generateAccessToken = async () => {
     headers: {
       ...form.getHeaders()
     },
-    data : form
-  };
-  const res = await axios(config)
-  options.writeJSON(res.data)
+    data: form
+  }
+  let res
+  try {
+    res = await axios(config)
+    options.writeJSON(res.data)
+
+  } catch (err) {
+    return err
+  }
+  return res.data
+
 }
 
 const uploadImage = async (imagePath) => {
@@ -38,11 +46,15 @@ const uploadImage = async (imagePath) => {
       'Authorization': `Bearer ${data.access_token}`,
       ...form.getHeaders()
     },
-    data : form
-  };
+    data: form
+  }
+  let res
+  try {
+    res = await axios(config)
 
-  const res = await axios(config)
+  } catch (err) {
+    return err
+  }
   return res.data.data.link
-
 }
 module.exports = {generateAccessToken, uploadImage}

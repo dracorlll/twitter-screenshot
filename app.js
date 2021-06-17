@@ -5,8 +5,10 @@ const TwitterBot = require('./controllers/TwitterBot')
 const browserInstance = browserObject.startBrowser()
 const CronJob = require('cron').CronJob
 const options = require('./helpers/file')
-const { v4: uuidv4 } = require('uuid')
+const {v4: uuidv4} = require('uuid')
 let lastMention
+
+const imgur = require('./controllers/imgurApi')
 
 const twitterClient = new TwitterClient({
   apiKey: process.env.API_KEY,
@@ -22,19 +24,24 @@ const onStart = async () => {
 const setLastMention = async (mentionId) => {
   const data = await options.readJSON()
   data.last_mention = mentionId
-  options.writeJSON(data)
+  return options.writeJSON(data)
 }
-const job = new CronJob('*/5 * * * * *', async () => {
-  console.log('Searcing mentions...')
-  let mentionList = await TwitterBot.checkMentions(twitterClient, lastMention)
-  if (mentionList.length !== 0) {
-    mentionList.pop()
-    lastMention = mentionList[0].id
-    await setLastMention(lastMention)
-    for (let mention of mentionList)
-      new TwitterBot(browserInstance, twitterClient, mention.in_reply_to_status_id_str, mention.user.id_str).start()
+const job = new CronJob('*/10 * * * * *', async () => {
+  let mentionList
+  try {
+    mentionList = await TwitterBot.checkMentions(twitterClient, lastMention)
+  } catch (err) {
+    mentionList = []
+    console.log(err)
   }
-  else console.log('There is no new mentions :((((')
+  if (mentionList.length !== 0) {
+    if (mentionList[0].id != lastMention) {
+      lastMention = mentionList[0].id
+      await setLastMention(lastMention)
+      for (let mention of mentionList)
+        new TwitterBot(browserInstance, twitterClient, mention.in_reply_to_status_id_str, mention.user.id_str).start()
+    }
+  }
 }, null, true, 'Europe/Istanbul')
 
 onStart().then(r => console.log("Program has started..."))
