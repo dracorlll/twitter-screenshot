@@ -1,9 +1,8 @@
 const Jimp = require('jimp')
 const { v4: uuidv4 } = require('uuid');
-const viewPort = {width: 1920, height: 1080, deviceScaleFactor: 2}
 const imgur = require('../controllers/imgurApi')
 const twitterClient = require('../controllers/twitterApi')
-
+const winston = require('winston')
 const getRepliedTweet = (arr) => {
   return arr.find(o => o.type === 'replied_to');
 }
@@ -14,18 +13,19 @@ const checkMentions = async (params) => {
   if (res.meta.result_count == 0 || !res)
     return false
   for (let mention of res.data){
-    arr.push({user: mention.author_id, tweet: getRepliedTweet(mention.referenced_tweets).id})
+    if (mention.id > params.since_id)
+      arr.push({user: mention.author_id, tweet: getRepliedTweet(mention.referenced_tweets).id})
   }
   return {tweets: arr, lastMention: res.meta.newest_id}
 }
 
-const imageCrop = async (imagePath) => {
+const cropImage = async (imagePath) => {
   try {
     let image = await Jimp.read(imagePath)
     await image.autocrop().writeAsync(imagePath)
 
   } catch (err) {
-    console.log(err)
+    winston.error({timestamp: new Date().toString(), error: err})
     return false
   }
   return true
@@ -60,7 +60,6 @@ const takeScreenshot = async (browserInstance, tweet) => {
     const screenshotOptions = {path: imagePath, fullPage: true, omitBackground: true}
     const tweetOptions = JSON.stringify({theme: 'dark', align: 'center'}).toString()
     const page = await browser.newPage()
-    await page.setViewport(viewPort);
     await page.setContent(html)
     await page.addScriptTag({path: './public/javascripts/widgets.js'});
     const evalString = `twttr.widgets.createTweet("${tweet}", document.getElementById("container"), ${tweetOptions})`
@@ -70,28 +69,24 @@ const takeScreenshot = async (browserInstance, tweet) => {
     await page.close()
   }
   catch (err) {
-    console.log(err)
+    winston.error({timestamp: new Date().toString(), error: err, type: 'browser'})
     return false
   }
   return imagePath
 }
 
 const start = async (browserInstance, tweet, user) => {
-  console.log("adli işlemler başlatıldı")
-
   let imagePath = await takeScreenshot(browserInstance, tweet)
   if (!imagePath)
     return false
-
-  let crop = await imageCrop(imagePath)
+  let crop = await cropImage(imagePath)
   if (!crop)
     return false
 
   let imageLink = await imgur.uploadImage(imagePath)
   if (!imageLink)
     return false
-
-  return await postDirectMessage(imageLink, user);
+  return await postDirectMessage(imageLink, user)
 }
 
 module.exports = {start, checkMentions, postDirectMessage}

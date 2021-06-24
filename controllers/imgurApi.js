@@ -3,6 +3,10 @@ const axios = require('axios')
 const FormData = require('form-data')
 const options = require('../helpers/file')
 const Jimp = require('jimp')
+const winston = require('winston')
+
+const generateURL = 'https://api.imgur.com/oauth2/token'
+const uploadURL = 'https://api.imgur.com/3/image'
 
 const generateAccessToken = async () => {
   const form = new FormData()
@@ -13,7 +17,7 @@ const generateAccessToken = async () => {
   form.append('grant_type', 'refresh_token')
   const config = {
     method: 'post',
-    url: 'https://api.imgur.com/oauth2/token',
+    url: generateURL,
     headers: {
       ...form.getHeaders()
     },
@@ -25,6 +29,7 @@ const generateAccessToken = async () => {
     options.writeJSON(res.data)
 
   } catch (err) {
+    winston.error({timestamp: new Date().toString(), error: err, type: 'generate'})
     return err
   }
   return res.data
@@ -40,7 +45,7 @@ const uploadImage = async (imagePath) => {
   form.append('album', 'NWoVTzS')
   const config = {
     method: 'post',
-    url: 'https://api.imgur.com/3/image',
+    url: uploadURL,
     responseType: 'json',
     headers: {
       'Authorization': `Bearer ${data.access_token}`,
@@ -53,6 +58,7 @@ const uploadImage = async (imagePath) => {
     res = await axios(config)
 
   } catch (err) {
+    winston.error({timestamp: new Date().toString(), error: err, type: 'upload'})
     return err
   }
   return res.data.data.link

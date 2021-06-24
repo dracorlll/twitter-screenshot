@@ -2,6 +2,7 @@
 .env
 user.json
 tests
+error.log
 
 # Logs
 logs

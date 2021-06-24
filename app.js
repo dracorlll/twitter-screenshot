@@ -4,9 +4,8 @@ const twitterBot = require('./controllers/twitterBot')
 const browserInstance = browserObject.startBrowser()
 const CronJob = require('cron').CronJob
 const options = require('./helpers/file')
-const {v4: uuidv4} = require('uuid')
+require('./helpers/logger')()
 const interval = 10
-
 let lastMention
 
 const onStart = async () => {
@@ -30,14 +29,22 @@ const job = new CronJob(`*/${interval} * * * * *`, async () => {
   if (mentions){
     lastMention = mentions.lastMention
     await setLastMention(lastMention)
-    for (let mention of mentions.tweets){
-      twitterBot.start(browserInstance, mention.tweet, mention.user)
-    }
+    for (let mention of mentions.tweets)
+       twitterBot.start(browserInstance, mention.tweet, mention.user)
   }
-  else console.log('yeni mention yok')
+  else console.log('There is no new mention...')
 
-}, null, true, 'Europe/Istanbul')
+}, null, false, 'Europe/Istanbul')
 
-onStart().then(r => console.log("Program has started..."))
+// const generateToken = new CronJob(`0 0 * * * *`, async () => {
+//   job.stop()
+//   await imgur.generateAccessToken()
+//   job.start()
+// }, null, true, 'Europe/Istanbul')
+
+onStart().then(r => {
+  console.log("Program has started...")
+  job.start()
+})
 
 

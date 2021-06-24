@@ -4,6 +4,7 @@ const addOAuthInterceptor  = require('axios-oauth-1.0a').default
 const mentionURL = `https://api.twitter.com/2/users/${process.env.USER_ID}/mentions`
 const dmURL = 'https://api.twitter.com/1.1/direct_messages/events/new.json'
 const bearerToken = `Bearer ${process.env.BEARER}`
+const winston = require('winston')
 
 const getMentions = async (params) => {
   const config = {
@@ -19,7 +20,7 @@ const getMentions = async (params) => {
     res = await axios(config)
 
   } catch (err) {
-    console.log(err)
+    winston.error({timestamp: new Date().toString(), error: err, type: 'mentions'})
     return false
   }
   return res.data
@@ -47,7 +48,7 @@ const postDirectMessage = async (event) => {
     res = await client.post(dmURL, {event}, config)
 
   } catch (err) {
-    console.log(err)
+    winston.error({timestamp: new Date().toString(), error: err, type: 'directmessage'})
     return false
   }
   return res.data
