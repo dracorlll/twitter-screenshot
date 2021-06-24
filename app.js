@@ -1,45 +1,50 @@
 require('dotenv').config()
-const {TwitterClient} = require('twitter-api-client')
 const browserObject = require('./helpers/browser')
-const TwitterBot = require('./controllers/TwitterBot')
+const twitterBot = require('./controllers/twitterBot')
 const browserInstance = browserObject.startBrowser()
 const CronJob = require('cron').CronJob
 const options = require('./helpers/file')
-const { v4: uuidv4 } = require('uuid')
+require('./helpers/logger')()
+const interval = 10
 let lastMention
-
-const twitterClient = new TwitterClient({
-  apiKey: process.env.API_KEY,
-  apiSecret: process.env.API_SECRET,
-  accessToken: process.env.ACCESS_TOKEN,
-  accessTokenSecret: process.env.ACCESS_TOKEN_SECRET
-})
 
 const onStart = async () => {
   const data = await options.readJSON()
   lastMention = data.last_mention
 }
-const setLastMention = async (mentionId) => {
+
+const setLastMention = async (lastMention) => {
   const data = await options.readJSON()
-  data.last_mention = mentionId
-  options.writeJSON(data)
+  data.last_mention = lastMention
+  await options.writeJSON(data)
 }
-const job = new CronJob('*/5 * * * * *', async () => {
-  console.log('Searcing mentions...')
-  let mentionList = await TwitterBot.checkMentions(twitterClient, lastMention)
-  if (mentionList.length !== 0) {
-    mentionList.pop()
-    lastMention = mentionList[0].id
-    await setLastMention(lastMention)
-    for (let mention of mentionList)
-      new TwitterBot(browserInstance, twitterClient, mention.in_reply_to_status_id_str, mention.user.id_str).start()
+
+const job = new CronJob(`*/${interval} * * * * *`, async () => {
+  const params = {
+    max_results: 100,
+    since_id: lastMention,
+    expansions: 'referenced_tweets.id,author_id'
   }
-  else console.log('There is no new mentions :((((')
-}, null, true, 'Europe/Istanbul')
+  let mentions = await twitterBot.checkMentions(params)
+  if (mentions){
+    lastMention = mentions.lastMention
+    await setLastMention(lastMention)
+    for (let mention of mentions.tweets)
+       twitterBot.start(browserInstance, mention.tweet, mention.user)
+  }
+  else console.log('There is no new mention...')
 
-onStart().then(r => console.log("Program has started..."))
+}, null, false, 'Europe/Istanbul')
 
+// const generateToken = new CronJob(`0 0 * * * *`, async () => {
+//   job.stop()
+//   await imgur.generateAccessToken()
+//   job.start()
+// }, null, true, 'Europe/Istanbul')
 
-
+onStart().then(r => {
+  console.log("Program has started...")
+  job.start()
+})
 
 
