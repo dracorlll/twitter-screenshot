@@ -10,7 +10,9 @@ const getRepliedTweet = (arr) => {
 const checkMentions = async (params) => {
   let arr = []
   const res = await twitterClient.getMentions(params)
-  if (res.meta.result_count == 0 || !res)
+  if (!res)
+    return false
+  if (res.meta.result_count == 0)
     return false
   for (let mention of res.data){
     if (mention.id > params.since_id)
