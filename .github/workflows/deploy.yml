@@ -18,8 +18,9 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           password: ${{ secrets.AWS_KEY }}
           script: |
+            ls
             pwd
-            cd ~/home/engin/twitter-screenshot
+            cd /home/engin/twitter-screenshot
             sh deploy.sh
             
           
